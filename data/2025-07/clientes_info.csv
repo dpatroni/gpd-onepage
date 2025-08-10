@@ -1,0 +1,6 @@
+Cliente,LogoURL,TasaInteresAnual,TasaAnualMora,DiasPromMora,ExposicionUSD,DeudaEnFechaPct,PagareCheque,GarantiaReal,Escrow
+Inka’s Berries,https://.../inkas.png,33.5,44.9,4,5000000,100,1,1,1
+Los Medanos,https://.../medanos.png,32.5,42.8,16,1515271,45,1,1,1
+Agrícola Zaña,https://.../zana.png,42.0,46.8,45,1073698,94,1,1,0
+Proserla,https://.../proserla.png,26.8,39.3,14,1300000,100,1,1,1
+Otros clientes,,31.0,38.4,77,7899891,79,0,0,0
