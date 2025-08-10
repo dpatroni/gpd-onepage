@@ -1,409 +1,437 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GPD – Reporte OnePage</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Portafolio GPD</title>
 
-<!-- Chart.js + html2pdf -->
+<!-- Libs -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
   :root{
-    --green:#1f3b26; --green-2:#6fbf73; --green-3:#a7d7a9;
-    --blue:#2c6cb0; --gray:#6b7280; --light:#f5f7f8;
-    --yellow:#ffe54d; --ink:#111;
+    /* Dark (default) */
+    --bg:#0f121a; --card:#151a24; --ink:#e8ebf4; --muted:#9aa3b5;
+    --ring:#222836; --grid:#212734; --pill:#171d29;
+    --acc1:#7d8bff; --acc2:#5fb89a; --acc3:#a7a2d6;
+    --gap:20px; --radius:18px;
   }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#111;background:#fff}
-  .wrap{max-width:1280px;margin:0 auto;padding:28px}
-  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-  .brand{display:flex;align-items:center;gap:14px}
-  .brand h1{margin:0;color:var(--green);font-weight:900;letter-spacing:2px;font-size:52px}
-  .sub{font-size:20px;font-weight:800;margin:2px 0}
-  .muted{color:var(--gray);font-size:13px}
-  .btn{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
+  /* Light */
+  body.light{
+    --bg:#f6f7fb; --card:#ffffff; --ink:#111827; --muted:#4b5566;
+    --ring:#e5e7ef; --grid:#d7dbe6; --pill:#f3f5fb;
+    --acc1:#4c65ff; --acc2:#2e8b6e; --acc3:#685bd6;
+  }
 
-  .grid{display:grid;gap:16px}
-  .g-3{grid-template-columns:2fr 3fr 3fr}
-  .g-2{grid-template-columns:1fr 1fr}
-  .g-12{grid-template-columns:7fr 5fr}
+  body{margin:0;background:linear-gradient(180deg,#0d1017,var(--bg));color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  body.light{background:#eef1f8}
+  .wrap{max-width:1280px;margin:0 auto;padding:clamp(12px,2.8vw,24px)}
+  .hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .brand h1{margin:0;color:#fff;font-weight:900;font-size:clamp(26px,4.6vw,48px)}
+  body.light .brand h1{color:#111827}
+  .muted{color:var(--muted)}
+  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .control{background:var(--pill);border:1px solid var(--ring);border-radius:12px;padding:10px 12px;color:var(--ink)}
+  select,input[type="date"]{border:none;outline:none;background:transparent;font:inherit;color:inherit}
 
-  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
-  .section-title{font-weight:700;margin-bottom:8px}
-  .pill{display:inline-block;background:var(--yellow);padding:8px 10px;border-radius:8px;font-weight:900}
+  .btn{
+    background: var(--acc1); color:#0f121a; border:1px solid transparent;
+    border-radius:12px; padding:12px 16px; font-weight:800;
+    box-shadow:0 6px 18px rgba(125,139,255,.25); cursor:pointer;
+    transition:transform .05s, box-shadow .15s, opacity .2s;
+  }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 8px 22px rgba(125,139,255,.32) }
+  .btn:active{ transform:translateY(0); box-shadow:0 4px 12px rgba(125,139,255,.22) }
+  .btn-ghost{ background:var(--pill); color:var(--ink); border:1px solid var(--ring); box-shadow:none }
+  .btn-ghost:hover{ opacity:.95 }
 
-  .chart-box{position:relative;height:300px}
-  .center-total{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;text-align:center}
-  .center-total .t{font-weight:800;font-size:28px}
-  .center-total .s{font-size:12px;color:#444}
+  .grid{display:grid;gap:var(--gap)}
+  .g-top{grid-template-columns:1.15fr 1fr 1fr}
+  .g-mid{grid-template-columns:1fr 1fr}
+  .card{background:var(--card);border:1px solid var(--ring);border-radius:var(--radius);padding:clamp(12px,2vw,16px);break-inside:avoid; box-shadow:0 6px 22px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.03)}
+  .section-title{font-weight:900;margin-bottom:8px;font-size:clamp(16px,2.4vw,22px);color:var(--ink)}
 
-  .legend{margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:12px}
-  .item{display:flex;align-items:center;gap:8px}
+  .kpi-wrap{background:rgba(255,255,255,.03);border:1px solid var(--ring);border-radius:24px;padding:18px 20px;display:inline-block}
+  #kpi-rent{font-size:clamp(34px,4.2vw,56px);font-weight:900;color:#ffe39a;background:#2b2515;border:1px solid #40351a;border-radius:12px;padding:4px 10px;display:inline-block}
+  body.light #kpi-rent{ background:#f3f0e4; color:#6a5a2a; border-color:#e7dcb9 }
+  .kpi-small{font-size:13px;color:#cfd4e3} body.light .kpi-small{color:#4b5566}
+
+  .chart-box{position:relative;height:clamp(240px,34vw,380px)}
+  .chart-lg{height:clamp(240px,32vw,340px)}
+  .legend-list{margin-top:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:14px}
+  .i{display:flex;align-items:center;gap:8px}
   .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
+  .right-note{margin-left:auto;color:#cfd4e3;font-weight:800}
+  body.light .right-note{color:#374151}
 
-  .pie-mini{height:240px}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:#161c29;border:1px solid var(--ring);border-radius:12px;padding:8px 10px;font-weight:900;color:#cfd4e3}
+  body.light .badge{background:#eef1fb;color:#1f2937}
 
-  .list{display:grid;gap:4px;font-size:13px}
-  .list .row{display:flex;justify-content:space-between;border-bottom:1px dashed #eee;padding:4px 0}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  .info-card{background:#171e2b;border:1px solid var(--ring);border-radius:16px;padding:14px}
+  body.light .info-card{background:#ffffff}
+  .info-title{font-weight:900;margin-bottom:8px}
+  .info-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .info-chip{background:#121825;border:1px solid var(--ring);border-radius:12px;padding:10px;text-align:center}
+  body.light .info-chip{background:#f6f7fb}
+  .info-chip .v{font-weight:900}
 
-  .bar-item{display:flex;align-items:center;gap:12px;margin:8px 0}
-  .bar{height:18px;background:repeating-linear-gradient(45deg,#d1d5db,#d1d5db 6px,#eceff1 6px,#eceff1 12px);border-radius:6px}
+  /* Leyenda de garantías */
+  .gar-legend{margin-top:14px;border-top:1px dashed var(--ring);padding-top:8px}
+  .gar-legend .row{display:flex;justify-content:space-between;padding:6px 0}
 
-  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .client-card{border:1px solid #e5e7eb;border-radius:16px;padding:14px;background:#fff}
-  .client-card h4{margin:0 0 6px 0}
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px}
-  .kpi-box{background:#f7faf7;border:1px solid #e6eee6;border-radius:10px;padding:8px;text-align:center}
-  .kpi-box .v{font-weight:800;font-size:14px}
+  /* Iconos en tarjetas de clientes */
+  .ico-row{display:flex;gap:14px;margin-top:10px;align-items:center}
+  .ico-row svg{width:22px;height:22px;display:block}
+  .ico-blue{color: rgba(125,139,255,0.95)}
+  .ico-green{color: rgba(95,184,154,0.95)}
+  .ico-purple{color: rgba(167,162,214,0.95)}
+  .ico-spark{color: rgba(125,139,255,0.85)}
+  body.light .ico-blue{color:#4c65ff}
+  body.light .ico-green{color:#2e8b6e}
+  body.light .ico-purple{color:#685bd6}
+  body.light .ico-spark{color:#4c65ff}
 
-  .footnote{font-size:12px;color:#666}
-  @media(max-width:1100px){
-    .g-3,.g-2,.g-12{grid-template-columns:1fr}
-    .cards{grid-template-columns:1fr}
+  /* Print */
+  #capture.export{ width:190mm; margin:0 auto; }
+  #capture.export .grid{ grid-template-columns:1fr !important; }
+  #capture.export .chart-box{ height:230px !important; }
+  #capture.export .card{ break-inside:avoid; page-break-inside:avoid; box-shadow:none }
+  @media print {
+    @page{ size:A4 portrait; margin:10mm }
+    body{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+    .btn,.controls{ display:none !important }
+    #capture{ width:190mm; margin:0 auto }
+    .grid{ grid-template-columns:1fr !important }
+    .chart-box{ height:230px !important }
+    .card{ break-inside:avoid; page-break-inside:avoid; box-shadow:none }
   }
+  @media (max-width:1100px){ .g-top{grid-template-columns:1fr 1fr} }
+  @media (max-width:860px){ .g-top,.g-mid{grid-template-columns:1fr} .info-kpis{grid-template-columns:repeat(2,1fr)} }
 </style>
 </head>
 <body>
 <div class="wrap" id="capture">
-  <!-- Header -->
-  <div class="header">
+  <div class="hdr">
     <div class="brand">
-      <h1>GPD</h1>
-      <div>
-        <div class="sub">Portafolio GPD a <span id="label-mes">Julio 2025</span></div>
-        <div class="muted">(Mill. US$ al <span id="label-fecha">31.07.2025</span>)</div>
-      </div>
+      <h1>GPD Partners — Portafolio GPD <span id="label-mes">—</span></h1>
+      <div class="muted">(Mill. US$ al <span id="label-fecha">—</span>)</div>
     </div>
-    <button class="btn" id="btn-pdf">Exportar PDF</button>
+    <div class="controls">
+      <div class="control">Periodo:
+        <select id="sel-periodo">
+          <option value="2025-06">2025-06</option>
+          <option value="2025-07" selected>2025-07</option>
+        </select>
+      </div>
+      <div class="control">Corte:
+        <input id="inp-corte" type="date" />
+      </div>
+      <button id="btn-actualizar" class="btn">Actualizar</button>
+      <button id="btn-pdf" class="btn btn-ghost">Exportar PDF</button>
+      <button id="btn-theme" class="btn btn-ghost">Modo claro</button>
+    </div>
   </div>
 
-  <!-- Fila superior -->
-  <div class="grid g-3">
-    <!-- Rentabilidad -->
-    <div class="card">
+  <section class="grid g-top">
+    <article class="card">
       <div class="section-title">Rentabilidad Anual</div>
-      <div>
-        <span class="pill" id="rentabilidad-kpi">20.86%</span>
-        <div class="muted" style="margin-top:8px">tasa de rentabilidad neta anualizada*</div>
-        <div class="muted">*Considerando últimos 12 meses</div>
+      <div class="kpi-wrap">
+        <div id="kpi-rent">—%</div>
+        <div class="kpi-small">% tasa neta anualizada (últimos 12 meses)</div>
       </div>
-    </div>
+      <div class="kpi-small" style="margin-top:10px">*Considerando últimos 12 meses</div>
+    </article>
 
-    <!-- Estatus Operativo -->
-    <div class="card">
+    <article class="card">
       <div class="section-title">Estatus Operativo</div>
-      <div class="grid g-2" style="gap:8px;margin-bottom:6px">
-        <div class="muted">Jul-25</div><div class="muted" style="text-align:right">Dic-24</div>
-      </div>
-      <div class="chart-box">
-        <canvas id="chartEstatus"></canvas>
-        <div class="center-total">
-          <div>
-            <div class="t" id="total-mm">--</div>
-            <div class="s">MM USD</div>
-          </div>
-        </div>
-      </div>
-      <div class="legend" id="legendEstatus"></div>
-    </div>
+      <div class="chart-box"><canvas id="chEstatus"></canvas></div>
+      <div class="legend-list" id="legendEstatus"></div>
+    </article>
 
-    <!-- Distribución por sectores -->
-    <div class="card">
+    <article class="card">
       <div class="section-title">Distribución por sectores</div>
-      <div class="muted">(Mill. US$ al <span id="label-fecha-2">31.07.2025</span>)</div>
-      <div class="chart-box">
-        <canvas id="chartSectores"></canvas>
-      </div>
-      <div class="legend" id="legendSectores"></div>
-    </div>
-  </div>
-
-  <!-- Segunda franja -->
-  <div class="grid g-12" style="margin-top:16px">
-    <!-- Clientes Fondo EGQ -->
-    <div class="card">
-      <div class="section-title">Clientes Fondo EGQ</div>
-      <div class="muted" style="margin-bottom:6px">Principales 5 clientes</div>
-      <div class="grid g-12">
-        <div>
-          <div class="chart-box pie-mini">
-            <canvas id="chartTopClientes"></canvas>
-          </div>
-        </div>
-        <div>
-          <div class="list" id="listaOtrosClientes"></div>
+      <div class="chart-box" style="position:relative">
+        <canvas id="chSectores"></canvas>
+        <div style="position:absolute;right:8px;top:8px;display:flex;gap:8px">
+          <span class="badge"><span class="dot" style="background:#1f2937"></span>Actual</span>
+          <span class="badge"><span class="dot" style="background:#94a3b8"></span>Histórico</span>
         </div>
       </div>
-    </div>
+      <div class="legend-list" id="legendSectores"></div>
+    </article>
+  </section>
 
-    <!-- Valor Cuota -->
-    <div class="card">
-      <div class="section-title">Valor Cuota</div>
-      <div class="grid g-2" style="gap:12px">
-        <div>
-          <table class="muted" style="font-size:13px;width:100%">
-            <tr><th style="text-align:left">Rent. Neta</th><td style="text-align:right" id="rn-2023">18.6%</td><td style="text-align:right" id="rn-2024">24.8%</td><td style="text-align:right" id="rn-ytd">—</td></tr>
-            <tr><th style="text-align:left">Rent. Bruta</th><td style="text-align:right">30.0%</td><td style="text-align:right">30.0%</td><td style="text-align:right">—</td></tr>
-          </table>
-        </div>
-        <div>
-          <canvas id="chartValorCuota" height="120"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tercera franja: Garantías + Monto Colocado -->
-  <div class="grid g-12" style="margin-top:16px">
-    <!-- Garantías -->
-    <div class="card">
+  <section class="grid g-mid" style="margin-top:var(--gap)">
+    <article class="card">
       <div class="section-title">Principales Garantías Reales (miles US$)</div>
-      <div class="grid g-2" style="gap:16px">
-        <div>
-          <div class="list" id="tablaGarantias"></div>
-          <div class="card" style="background:#f6fbf6;border-color:#dbe9db;margin-top:10px">
-            <strong id="cobertura-kpi">77% de exposición</strong><br>
-            <span class="muted">cubierto con garantías reales</span>
-          </div>
-        </div>
-        <div>
-          <div class="chart-box pie-mini">
-            <canvas id="chartGarantias"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
+      <span class="badge" id="badge-gar">—% de exposición&nbsp;&nbsp;<span class="kpi-small">cubierto con garantías reales</span></span>
+      <div class="chart-box chart-lg"><canvas id="chGarantias"></canvas></div>
+      <div class="gar-legend" id="gar-legend"></div>
+    </article>
 
-    <!-- Monto Colocado -->
-    <div class="card">
+    <article class="card">
       <div class="section-title">Monto Colocado por cliente (US$)</div>
-      <div id="barrasColocado"></div>
+      <div class="chart-box"><canvas id="chartMonto"></canvas></div>
+    </article>
+  </section>
+
+  <section class="card" style="margin-top:var(--gap)">
+    <div class="section-title">Valor Cuota</div>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <span class="badge" id="badge-yoy">Var% YoY —</span>
+      <span class="badge" id="badge-ytd">Var% YTD —</span>
+      <span class="badge" id="badge-last">Último —</span>
     </div>
-  </div>
+    <div class="chart-box chart-lg"><canvas id="chValorCuota"></canvas></div>
+  </section>
 
-  <!-- Cuarta franja: Info adicional clientes -->
-  <div class="card" style="margin-top:16px">
+  <section class="card" style="margin-top:var(--gap)">
     <div class="section-title">Información adicional de principales clientes</div>
-    <div class="cards" id="cardsClientes"></div>
-  </div>
-
-  <div class="footnote" style="margin-top:12px">
-    (1) Tasa de interés anual promedio de operaciones vigentes. (2) Días promedio YTD que normalmente permanece en mora.
-  </div>
+    <div class="info-grid" id="infoClientes"></div>
+    <div class="muted" style="margin-top:8px">
+      (1) Tasa de interés anual promedio de operaciones vigentes. (2) Días promedio YTD que normalmente permanece en mora.
+    </div>
+  </section>
 </div>
 
 <script>
-  // Colores base
-  const C = {
-    enFecha:"#1f3b26", vencido:"#86b88f", distressed:"#9aa6b2", inmovilizado:"#e5e7eb", caja:"#b0c4de",
-    agro:"#1f3b26", coop:"#7bbf6a", cons:"#2c6cb0", otros:"#9aa6b2",
-    accent:"#ffe54d"
+Chart.register(ChartDataLabels);
+
+/* Helpers */
+const fmtUSD0 = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(v||0);
+const fmtMM   = v => (v/1e6 >= 10 ? (v/1e6).toFixed(1) : (v/1e6).toFixed(2));
+const fmtMMText = v => `${fmtMM(v)} MM USD`;
+const monthLabel = (ym)=>{const [y,m]=ym.split('-').map(Number);const d=new Date(y,m-1,1);let s=d.toLocaleDateString('es-PE',{month:'long',year:'numeric'});return s.charAt(0).toUpperCase()+s.slice(1);}
+const hexToRgba=(h,a=1)=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return`rgba(${r},${g},${b},${a})`;}
+async function loadCSV(p){return new Promise((res,rej)=>Papa.parse(p,{header:true,download:true,skipEmptyLines:true,complete:r=>res(r.data),error:rej}))}
+async function tryLoad(p){try{return await loadCSV(p);}catch{return[];}}
+
+const THEME_KEY='gpd_theme_v1';
+function isLight(){ return document.body.classList.contains('light'); }
+function themeColors(){
+  return {
+    grid: getComputedStyle(document.documentElement).getPropertyValue('--grid').trim(),
+    label: isLight()? '#374151' : '#cfd4e3',
+    center: isLight()? '#4a5160' : '#e6e8f2',
+    barRight: isLight()? '#4a5160' : '#cfd4e3'
   };
+}
 
-  // Helpers
-  const fmtUSD = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(v||0);
-  const pct = (v,t) => t ? (v/t*100) : 0;
-
-  let chEstatus, chSectores, chTopClientes, chValorCuota, chGarantias;
-
-  // Renderers
-  function legend(containerId, labels, colors, values, total){
-    const el = document.getElementById(containerId);
-    el.innerHTML = "";
-    labels.forEach((lbl,i)=>{
-      const row = document.createElement('div');
-      row.className = 'item';
-      row.innerHTML = `<span class="dot" style="background:${colors[i]}"></span>
-                       <span>${lbl}</span>
-                       <span style="margin-left:auto">${pct(values[i],total).toFixed(0)}%</span>`;
-      el.appendChild(row);
-    });
-  }
-
-  function renderBarsColocado(containerId, items){
-    const wrap = document.getElementById(containerId);
-    wrap.innerHTML = "";
-    // encontrar max para escala
-    const max = Math.max(...items.map(i => i.monto));
-    items.forEach(i=>{
-      const row = document.createElement('div'); row.className="bar-item";
-      const label = document.createElement('div'); label.style.minWidth="180px"; label.textContent = i.nombre;
-      const bar = document.createElement('div'); bar.className="bar"; bar.style.width = (i.monto/max*100).toFixed(1)+'%';
-      const monto = document.createElement('div'); monto.style.marginLeft="auto"; monto.textContent = i.monto.toLocaleString('en-US');
-      row.appendChild(label); row.appendChild(bar); row.appendChild(monto);
-      wrap.appendChild(row);
-    });
-  }
-
-  function renderCardsClientes(containerId, cards){
-    const wrap = document.getElementById(containerId); wrap.innerHTML = "";
-    cards.forEach(c=>{
-      const box = document.createElement('div'); box.className="client-card";
-      box.innerHTML = `
-        <h4>${c.nombre}</h4>
-        <div class="kpis">
-          <div class="kpi-box"><div class="v">${c.tasa}%</div><div>Tasa de interés anual</div></div>
-          <div class="kpi-box"><div class="v">${c.tasaMora}%</div><div>Tasa anual con mora</div></div>
-          <div class="kpi-box"><div class="v">${c.diasMora}</div><div>Días prom. de mora</div></div>
-          <div class="kpi-box"><div class="v">${c.deudaEnFecha}%</div><div>Deuda en fecha</div></div>
-        </div>
-        <div class="muted" style="margin-top:6px">Exposición actual ${fmtUSD(c.exposicion)}</div>
-      `;
-      wrap.appendChild(box);
-    });
-  }
-
-  // Cargar datos y pintar todo
-  function loadData(data){
-    // Header
-    const d = new Date(data.corte);
-    const mes = d.toLocaleDateString('es-PE',{month:'long',year:'numeric'});
-    const f = d.toLocaleDateString('es-PE');
-    document.getElementById('label-mes').textContent = mes.charAt(0).toUpperCase()+mes.slice(1);
-    document.getElementById('label-fecha').textContent = f;
-    document.getElementById('label-fecha-2').textContent = f;
-
-    // Rentabilidad
-    document.getElementById('rentabilidad-kpi').textContent = ((data.rentabilidad12m||0)*100).toFixed(2)+'%';
-
-    // Estatus donut
-    const estLabels = ["En Fecha","Vencido","Compra Distressed","Inmovilizado","Caja"];
-    const estVals = estLabels.map(k => data.estatus[k]||0);
-    const estColors = [C.enFecha,C.vencido,C.distressed,C.inmovilizado,C.caja];
-    if(chEstatus) chEstatus.destroy();
-    chEstatus = new Chart(document.getElementById('chartEstatus'),{
-      type:'doughnut',
-      data:{labels:estLabels,datasets:[{data:estVals,backgroundColor:estColors}]},
-      options:{cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{
-        label:(ctx)=>`${ctx.label}: ${fmtUSD(ctx.raw)} (${pct(ctx.raw,data.total).toFixed(0)}%)`
-      }}}}
-    });
-    document.getElementById('total-mm').textContent = (data.total/1_000_000).toFixed(1);
-    legend('legendEstatus', estLabels, estColors, estVals, data.total);
-
-    // Sectores donut
-    const secLabels = Object.keys(data.sectoresActual);
-    const secVals = secLabels.map(k=>data.sectoresActual[k]);
-    const secColors = secLabels.map(k=>({"Agroindustria":C.agro,"Cooperativas Cafetaleras":C.coop,"Construcción":C.cons,"Otros":C.otros}[k]||C.otros));
-    if(chSectores) chSectores.destroy();
-    chSectores = new Chart(document.getElementById('chartSectores'),{
-      type:'doughnut',
-      data:{labels:secLabels,datasets:[{data:secVals,backgroundColor:secColors}]},
-      options:{cutout:'60%',plugins:{legend:{display:false}}}
-    });
-    legend('legendSectores', secLabels, secColors, secVals, data.total);
-
-    // Top clientes (pie)
-    const top = data.topClientes;
-    if(chTopClientes) chTopClientes.destroy();
-    chTopClientes = new Chart(document.getElementById('chartTopClientes'),{
-      type:'doughnut',
-      data:{labels:top.labels,datasets:[{data:top.values,backgroundColor:[C.agro,C.coop,C.cons,'#8b8b8b','#c9cfd6','#a0a0a0']}]},
-      options:{cutout:'55%',plugins:{legend:{display:false}}}
-    });
-    // lista otros
-    const otros = document.getElementById('listaOtrosClientes'); otros.innerHTML="";
-    data.otrosClientes.forEach(o=>{
-      const row = document.createElement('div'); row.className='row';
-      row.innerHTML = `<span>${o.nombre}</span><span>${o.pct.toFixed(1)}%</span>`;
-      otros.appendChild(row);
-    });
-
-    // Valor Cuota (línea)
-    if(chValorCuota) chValorCuota.destroy();
-    chValorCuota = new Chart(document.getElementById('chartValorCuota'),{
-      type:'line',
-      data:{labels:data.valorCuota.labels,datasets:[{data:data.valorCuota.values, fill:false, tension:.2}]},
-      options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:false}}}
-    });
-    document.getElementById('rn-ytd').textContent = (data.rentNetaYTD*100).toFixed(2)+'%';
-
-    // Garantías (tabla + pie)
-    const tgar = document.getElementById('tablaGarantias'); tgar.innerHTML="";
-    data.garantias.lista.forEach(g=>{
-      const row = document.createElement('div'); row.className='row';
-      row.innerHTML = `<span>${g.nombre}</span><span>${g.miles.toLocaleString('en-US')} ( ${g.cubierto}x )</span>`;
-      tgar.appendChild(row);
-    });
-    document.getElementById('cobertura-kpi').textContent = data.garantias.coberturaPct+'% de exposición';
-
-    if(chGarantias) chGarantias.destroy();
-    chGarantias = new Chart(document.getElementById('chartGarantias'),{
-      type:'doughnut',
-      data:{labels:data.garantiasPie.labels,datasets:[{data:data.garantiasPie.values,backgroundColor:['#7aa378','#86c391','#9ad0ab','#c2dfc4','#dfeee0','#8fb499','#b7c8b8','#e3f2e6']}]},
-      options:{cutout:'55%',plugins:{legend:{display:false}}}
-    });
-
-    // Barras de Monto Colocado
-    renderBarsColocado('barrasColocado', data.montoColocado);
-
-    // Cards clientes
-    renderCardsClientes('cardsClientes', data.cardsClientes);
-  }
-
-  // PDF
-  document.getElementById('btn-pdf').addEventListener('click', ()=>{
-    const element = document.getElementById('capture');
-    html2pdf().set({
-      margin:[10,10,10,10],
-      filename:'GPD-OnePage.pdf',
-      image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-    }).from(element).save();
+/* >>> Legend function <<< */
+function legend(containerId, items){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = '';
+  items.forEach(it=>{
+    const row = document.createElement('div');
+    row.className = 'i';
+    row.innerHTML = `
+      <span class="dot" style="background:${it.color}"></span>
+      <span>${it.label}</span>
+      <span class="right-note">${it.value || ''}</span>
+    `;
+    el.appendChild(row);
   });
+}
 
-  // -------- DEMO DATA (sustituir por fetch a tu API o CSV) --------
-  const total = 16_400_000;
-  const demo = {
-    corte:'2025-07-31',
-    rentabilidad12m:0.2086,
-    rentNetaYTD:0.0772,
-    total,
-    estatus:{ "En Fecha":0.64*total, "Vencido":0.17*total, "Compra Distressed":0.10*total, "Inmovilizado":0.04*total, "Caja":0.05*total },
-    sectoresActual:{ "Agroindustria":0.75*total, "Construcción":0.14*total, "Cooperativas Cafetaleras":0.10*total, "Otros":0.01*total },
-    topClientes:{ labels:["Inka’s Berries","Fideic. Gandules","Medanos","Libre Inmob.","Prosrela","Otros"], values:[30.7,9.1,8.3,8.8,5.8,16.8] },
-    otrosClientes:[
-      {nombre:"Agrícola Zaña", pct:6.4},{nombre:"FRG Farms", pct:4.1},{nombre:"Inm. Norte", pct:2.5},{nombre:"Quinta Blanca", pct:2.1},{nombre:"Apromayo", pct:1.5},{nombre:"Demás", pct:19.1}
-    ],
-    valorCuota:{ labels:["Sep-22","Nov-22","Ene-23","May-23","Sep-23","Ene-24","May-24","Sep-24","Ene-25","Mar-25","May-25","Jul-25"], values:[100,108.37,125.99,134.61,127.74,147.45,157.34,167.33,167.33,167.33,167.33,167.33] },
-    garantias:{
-      coberturaPct:77,
-      lista:[
-        {nombre:"Inka’s Berries", miles:4050, cubierto:"1.2x"},
-        {nombre:"Fid. Gandules", miles:1680, cubierto:"1.8x"},
-        {nombre:"Medanos", miles:1668, cubierto:"2.1x"},
-        {nombre:"Libre Inmobil.", miles:1350, cubierto:"1.5x"},
-        {nombre:"Proserla", miles:1300, cubierto:"1.2x"},
-        {nombre:"Inm. Del Norte", miles:4145, cubierto:"5.7x"},
-        {nombre:"Quinta Blanca", miles:350, cubierto:"1.5x"},
-      ]
-    },
-    garantiasPie:{
-      labels:["Inm. del Norte","Fid. Gandules","Los Medanos","Inka’s Berries","Libre Inmob.","Ag. Zaña","Quint. Blanca","Otros clientes"],
-      values:[4000,3200,3209,2375,2452,1892,350,3944]
-    },
-    montoColocado:[
-      {nombre:"Inka’s Berries", monto:5000000},
-      {nombre:"Fideic. Gandules", monto:1680000},
-      {nombre:"Medanos", monto:1515271},
-      {nombre:"Libre Inmob.", monto:1350000},
-      {nombre:"Proserla", monto:1300000},
-      {nombre:"Otros", monto:5607555}
-    ],
-    cardsClientes:[
-      {nombre:"Inka’s Berries", tasa:33.3, tasaMora:44.9, diasMora:4, deudaEnFecha:100, exposicion:5000000},
-      {nombre:"Los Medanos", tasa:32.5, tasaMora:42.8, diasMora:12, deudaEnFecha:65, exposicion:1515271},
-      {nombre:"Agrícola Zaña", tasa:42.0, tasaMora:46.8, diasMora:45, deudaEnFecha:94, exposicion:1073698},
-      {nombre:"Proserla", tasa:26.8, tasaMora:39.3, diasMora:14, deudaEnFecha:100, exposicion:1300000},
-      {nombre:"Otros clientes", tasa:31.0, tasaMora:38.4, diasMora:77, deudaEnFecha:79, exposicion:7899891}
-    ]
-  };
+/* Center text plugin */
+const centerTextPlugin = {
+  id:'centerTextPlugin',
+  afterDraw(chart){
+    const ds=chart.data.datasets?.[0]; if(!ds) return;
+    const total=ds.data.reduce((a,b)=>a+(+b||0),0);
+    const meta=chart.getDatasetMeta(0); if(!meta||!meta.data||!meta.data[0]) return;
+    const x=meta.data[0].x, y=meta.data[0].y; const ctx=chart.ctx; const t=themeColors();
+    ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=t.center;
+    ctx.font='700 14px system-ui,-apple-system,Segoe UI,Roboto,Arial'; ctx.fillText('Total',x,y-16);
+    ctx.font='900 20px system-ui,-apple-system,Segoe UI,Roboto,Arial'; ctx.fillText(fmtMMText(total),x,y+6);
+    ctx.restore();
+  }
+};
 
-  // Si quieres conectar: fetch('/api/onepage?corte=2025-07-31').then(r=>r.json()).then(loadData);
-  loadData(demo);
+/* ===== SVG íconos reutilizados ===== */
+function svgTrend(cls=''){ return `
+  <svg class="${cls}" viewBox="0 0 24 24" fill="none">
+    <path d="M3 17l6-6 4 4 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`; }
+function svgShield(cls=''){ return `
+  <svg class="${cls}" viewBox="0 0 24 24" fill="none">
+    <path d="M12 3l7 3v5c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`; }
+function svgCheck(cls=''){ return `
+  <svg class="${cls}" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+    <path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`; }
+function svgSpark(cls=''){ return `
+  <svg class="${cls}" viewBox="0 0 24 24" fill="none">
+    <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20 14l.9 2.1L23 17l-2.1.9L20 20l-.9-2.1L17 17l2.1-.9L20 14zM3 14l.9 2.1L6 17l-2.1.9L3 20l-.9-2.1L0 17l2.1-.9L3 14z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`; }
+function iconsRow(){
+  return `
+    <div class="ico-row">
+      ${svgTrend('ico-blue')}
+      ${svgShield('ico-purple')}
+      ${svgCheck('ico-green')}
+      ${svgSpark('ico-spark')}
+    </div>`;
+}
+
+/* Charts refs */
+let chEstatus, chSectores, chGarantias, chValor, chMonto;
+
+/* Barras */
+function renderMontoColocadoChart(id, clientes, montos){
+  const ctx=document.getElementById(id).getContext('2d');
+  if(chMonto) chMonto.destroy();
+  const total=montos.reduce((a,b)=>a+b,0); const t=themeColors();
+  chMonto=new Chart(ctx,{
+    type:'bar',
+    data:{labels:clientes,datasets:[{data:montos,backgroundColor:'rgba(125,139,255,0.85)',borderRadius:10,maxBarThickness:28}]},
+    options:{
+      indexAxis:'y',maintainAspectRatio:false,layout:{padding:{right:110}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtUSD0(c.raw)} (${total?Math.round(c.raw/total*100):0}%)`}},
+        datalabels:{color:'#0f121a',backgroundColor:isLight()?'#e3e7f6':'#e9ecf5',borderRadius:6,padding:4,font:{weight:800,size:11},anchor:'center',align:'center',formatter:v=>`${total?(v/total*100).toFixed(0):0}%`}
+      },
+      scales:{x:{grid:{color:t.grid},ticks:{display:false}},y:{grid:{display:false},ticks:{color:t.label,font:{weight:'700'}}}}
+    },
+    plugins:[{id:'amountRight',afterDatasetsDraw(chart){const {ctx,scales:{x,y}}=chart;const t=themeColors();ctx.save();ctx.textBaseline='middle';ctx.font='600 12px system-ui';ctx.fillStyle=t.barRight;chart.data.datasets[0].data.forEach((v,i)=>{ctx.fillText(fmtUSD0(v),x.getPixelForValue(v)+10,y.getPixelForTick(i));});ctx.restore();}}]
+  });
+}
+
+/* Theme toggle */
+function applyTheme(t){document.body.classList.toggle('light',t==='light');document.getElementById('btn-theme').textContent=t==='light'?'Modo oscuro':'Modo claro';}
+const savedTheme=localStorage.getItem(THEME_KEY)||'dark'; applyTheme(savedTheme);
+document.getElementById('btn-theme').addEventListener('click',()=>{const next=isLight()?'dark':'light';localStorage.setItem(THEME_KEY,next);applyTheme(next);loadAll(document.getElementById('sel-periodo').value);});
+
+/* MAIN */
+async function loadAll(periodo){
+  const base=`data/${periodo}/`;
+  const [kpisData,operacionesData,sectoresData,garantiasData,topCliData,valorCuotaData,infoCliData]=await Promise.all([
+    tryLoad(base+'kpis.csv'), tryLoad(base+'operaciones.csv'), tryLoad(base+'sectores.csv'),
+    tryLoad(base+'garantias.csv'), tryLoad(base+'top_clientes.csv'), tryLoad(base+'valor_cuota.csv'),
+    tryLoad(base+'clientes_info.csv')
+  ]);
+
+  /* Header */
+  const corteISO=(kpisData?.[0]?.corte)||document.getElementById('inp-corte').value||`${periodo}-28`;
+  document.getElementById('inp-corte').value=corteISO;
+  document.getElementById('label-mes').textContent=monthLabel(periodo);
+  document.getElementById('label-fecha').textContent=new Date(corteISO).toLocaleDateString('es-PE');
+
+  /* KPI */
+  const rent=Number(kpisData?.[0]?.rentabilidad12m||0);
+  const cov=Number(kpisData?.[0]?.coberturaGarantiasPct||0);
+  document.getElementById('kpi-rent').textContent=(rent*100).toFixed(2)+'%';
+  document.getElementById('badge-gar').firstChild.textContent=`${cov}% de exposición `;
+
+  /* Estatus Operativo */
+  let total=0; const estatus={"En Fecha":0,"Vencido":0,"Compra Distressed":0,"Inmovilizado":0,"Caja":0};
+  (operacionesData||[]).forEach(o=>{const m=+o.MontoExposicionUSD||0; const e=o.Estado||""; total+=m; if(estatus[e]!=null) estatus[e]+=m;});
+  const estLabels=Object.keys(estatus), estVals=estLabels.map(k=>estatus[k]);
+  const estColors=['rgba(125,139,255,0.85)','rgba(238,201,109,0.85)','rgba(232,121,113,0.85)','rgba(148,196,255,0.85)','rgba(111,171,152,0.85)'];
+  if(chEstatus) chEstatus.destroy();
+  const t=themeColors();
+  chEstatus=new Chart(document.getElementById('chEstatus'),{
+    type:'doughnut',
+    data:{labels:estLabels,datasets:[{data:estVals,backgroundColor:estColors,borderWidth:0}]},
+    options:{cutout:'62%',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>`${c.label}: ${fmtUSD0(c.raw)} (${total?Math.round(c.raw/total*100):0}%)`}},datalabels:{color:t.label,backgroundColor:null,padding:0,font:{weight:700,size:11},formatter:v=>total?Math.round(v*100/total)+'%':''}}},
+    plugins:[centerTextPlugin]
+  });
+  legend('legendEstatus', estLabels.map((l,i)=>({label:l,color:estColors[i],value:`${total?Math.round(estVals[i]/total*100):0}% / ${fmtMMText(estVals[i])}`})));
+
+  /* Sectores: Actual color / Histórico gris */
+  const sLabels=(sectoresData||[]).map(r=>r.Sector);
+  const sActual=(sectoresData||[]).map(r=>+r.ActualPct||0);
+  const sHist=(sectoresData||[]).map(r=>+r.HistoricoPct||0);
+  const colorsBase=sLabels.map(l=>({"Agroindustria":getComputedStyle(document.documentElement).getPropertyValue('--acc2').trim(),"Construcción":getComputedStyle(document.documentElement).getPropertyValue('--acc1').trim(),"Cooperativas Cafetaleras":getComputedStyle(document.documentElement).getPropertyValue('--acc3').trim(),"Otros":"#9aa3b5"}[l]||"#9aa3b5"));
+  const histGrey=i=>`rgba(150,158,175,${[0.30,0.26,0.22,0.18,0.34][i%5]})`;
+  if(chSectores) chSectores.destroy();
+  chSectores=new Chart(document.getElementById('chSectores'),{
+    type:'doughnut',
+    data:{labels:sLabels,datasets:[
+      {data:sActual,backgroundColor:colorsBase.map(c=>hexToRgba(c,.85)),borderWidth:0,radius:'100%',cutout:'56%'},
+      {data:sHist,backgroundColor:sLabels.map((_,i)=>histGrey(i)),borderWidth:0,radius:'78%',cutout:'78%'}
+    ]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+  legend('legendSectores', sLabels.map((l,i)=>({label:l,color:hexToRgba(colorsBase[i],.85),value:`${sActual[i].toFixed(0)}% / ${sHist[i].toFixed(0)}%`})));
+
+  /* Garantías (5 colores diferenciados) */
+  const gLabels=(garantiasData||[]).map(g=>g.Nombre);
+  const gVals  =(garantiasData||[]).map(g=>+g.ValorMilesUSD||0);
+  const gCols  = [
+    hexToRgba(getComputedStyle(document.documentElement).getPropertyValue('--acc1').trim(), .85), // Hipotecas
+    'rgba(238,201,109,0.85)',  // Vehículos
+    hexToRgba(getComputedStyle(document.documentElement).getPropertyValue('--acc3').trim(), .85), // Maquinaria
+    'rgba(76,191,136,0.85)',   // Inka\'s Berries (teal)
+    'rgba(255,159,102,0.85)'   // Fideic. Gandules (naranja)
+  ].slice(0,gLabels.length);
+  if(chGarantias) chGarantias.destroy();
+  chGarantias=new Chart(document.getElementById('chGarantias'),{
+    type:'doughnut',
+    data:{labels:gLabels,datasets:[{data:gVals,backgroundColor:gCols,borderWidth:0}]},
+    options:{maintainAspectRatio:false,cutout:'58%',plugins:{legend:{display:false},datalabels:{color:t.label,backgroundColor:null,padding:0,font:{weight:700,size:11},formatter:(v)=>{const sum=gVals.reduce((a,b)=>a+b,0);return sum?Math.round(v*100/sum)+'%':'';}}}}
+  });
+  const gl=document.getElementById('gar-legend'); gl.innerHTML='';
+  (garantiasData||[]).forEach((g,i)=>{const row=document.createElement('div');row.className='row';row.innerHTML=`<div><span class="dot" style="background:${gCols[i]}"></span> ${g.Nombre}</div><div>${(+g.ValorMilesUSD||0).toLocaleString('en-US')} (miles US$)</div>`;gl.appendChild(row);});
+
+  /* Monto por cliente */
+  let clientesMonto=[], montos=[];
+  if((topCliData||[]).length){ clientesMonto=topCliData.map(r=>r.Cliente); montos=topCliData.map(r=>+r.MontoColocadoUSD||0); }
+  else{ const mpc=new Map(); (operacionesData||[]).forEach(o=>{const n=o.Codigo_Cliente||'Otro'; const m=+o.MontoExposicionUSD||0; mpc.set(n,(mpc.get(n)||0)+m);}); const arr=[...mpc.entries()].map(([nombre,monto])=>({nombre,monto})).sort((a,b)=>b.monto-a.monto); const top5=arr.slice(0,5), otros=arr.slice(5).reduce((s,x)=>s+x.monto,0); clientesMonto=[...top5.map(x=>x.nombre),'Otros']; montos=[...top5.map(x=>x.monto),otros]; }
+  renderMontoColocadoChart('chartMonto', clientesMonto, montos);
+
+  /* Valor cuota */
+  const vcX=(valorCuotaData||[]).map(r=>new Date(r.FechaISO));
+  const vcY=(valorCuotaData||[]).map(r=>+r.Valor||0);
+  if(chValor) chValor.destroy();
+  const tc=themeColors();
+  chValor=new Chart(document.getElementById('chValorCuota'),{
+    type:'line',
+    data:{labels:vcX.map(d=>d.toLocaleDateString('es-PE',{month:'short',year:'2-digit'})),datasets:[{data:vcY,borderColor:'rgba(125,139,255,0.9)',backgroundColor:'rgba(125,139,255,0.10)',tension:.22,pointRadius:3,borderWidth:2,fill:true}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{align:'top',offset:6,color:tc.label,backgroundColor:null,borderRadius:0,padding:0,font:{weight:600,size:11},formatter:v=>v.toFixed(2)}},scales:{x:{grid:{color:tc.grid},ticks:{color:tc.label}},y:{grid:{color:tc.grid},ticks:{color:tc.label}}}}
+  });
+  if(vcY.length>=2){const last=vcY.at(-1); const lastY=vcY.at(-13)??vcY[0]; const ytd0=vcY.find((_,i)=>vcX[i].getMonth()===0)??vcY[0]; const yoy=lastY?(last/lastY-1)*100:0; const ytd=ytd0?(last/ytd0-1)*100:0; document.getElementById('badge-yoy').textContent=`Var% YoY ${yoy.toFixed(2)}%`; document.getElementById('badge-ytd').textContent=`Var% YTD ${ytd.toFixed(2)}%`; document.getElementById('badge-last').textContent=`Último ${last.toFixed(2)}`; }
+
+  /* Info clientes (+ íconos) */
+  const wanted=["Inka’s Berries","Los Medanos","Agrícola Zaña","Proserla","Otros clientes"];
+  const cards=wanted.map(n=>(infoCliData||[]).find(r=>(r.Cliente||'').trim().toLowerCase()===n.toLowerCase())).filter(Boolean);
+  const elInfo=document.getElementById('infoClientes'); elInfo.innerHTML='';
+  cards.forEach(c=>{
+    const box=document.createElement('div'); box.className='info-card';
+    box.innerHTML=`
+      <div class="info-title">${c.Cliente}</div>
+      <div class="info-kpis">
+        <div class="info-chip"><div class="v">${(+c.TasaInteresAnual||0).toFixed(1)}%</div><div class="muted">Tasa interés anual</div></div>
+        <div class="info-chip"><div class="v">${(+c.TasaAnualMora||0).toFixed(1)}%</div><div class="muted">Tasa anual con mora</div></div>
+        <div class="info-chip"><div class="v">${(+c.DiasPromMora||0).toFixed(0)}</div><div class="muted">Días prom. mora</div></div>
+        <div class="info-chip"><div class="v">${(+c.DeudaEnFechaPct||0).toFixed(0)}%</div><div class="muted">Deuda en fecha</div></div>
+      </div>
+      <div style="margin-top:8px" class="muted">Exposición actual ${fmtUSD0(+c.ExposicionUSD||0)}</div>
+      ${iconsRow()}`;
+    elInfo.appendChild(box);
+  });
+}
+
+/* Controles */
+document.getElementById('btn-actualizar').addEventListener('click',()=>loadAll(document.getElementById('sel-periodo').value));
+document.getElementById('sel-periodo').addEventListener('change',()=>loadAll(document.getElementById('sel-periodo').value));
+document.getElementById('btn-pdf').addEventListener('click',async()=>{
+  const el=document.getElementById('capture'); el.classList.add('export');
+  [chEstatus,chSectores,chGarantias,chValor,chMonto].forEach(c=>{if(!c)return;c.options.animation=false;c.resize();});
+  await new Promise(r=>setTimeout(r,180)); window.print();
+  setTimeout(()=>{el.classList.remove('export');[chEstatus,chSectores,chGarantias,chValor,chMonto].forEach(c=>c&&c.resize());},250);
+});
+
+/* Init */
+(function(){ const t=localStorage.getItem(THEME_KEY)||'dark'; document.getElementById('btn-theme').textContent=t==='light'?'Modo oscuro':'Modo claro'; loadAll(document.getElementById('sel-periodo').value); })();
 </script>
 </body>
 </html>
